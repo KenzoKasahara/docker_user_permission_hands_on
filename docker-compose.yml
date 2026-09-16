@@ -1,0 +1,37 @@
+services:
+  web:
+    build: ./source
+    # この例はNginxを含まない最小構成のため、Djangoを直接公開している。
+    # Nginxを前段に置く場合は ports をやめて expose に変え、
+    # 外部へ公開するポートはNginxだけにする。
+    ports:
+      # ホスト側のポートは .env の WEB_PORT で変更できる（既定は8000）
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?.envにDJANGO_SECRET_KEYを設定してください}
+      DB_HOST: db
+      DB_NAME: appdb
+      DB_USER: appdb_user
+      DB_PASSWORD: ${DB_PASSWORD:?.envにDB_PASSWORDを設定してください}
+    depends_on:
+      db:
+        # DBが接続を受け付けるまでwebの起動を待つ
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    # ports は書かない。DBをホストや外部へ公開しないため
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appdb_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?.envにDB_PASSWORDを設定してください}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appdb_user -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

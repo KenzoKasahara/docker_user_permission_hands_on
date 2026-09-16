@@ -1,0 +1,242 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>全体構成とコンテナごとの実行ユーザー</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 36px 40px 40px;
+    background: #ffffff;
+    font-family: "Segoe UI", "Yu Gothic UI", "Noto Sans JP", Meiryo, sans-serif;
+    color: #1f2328;
+    -webkit-font-smoothing: antialiased;
+  }
+  .canvas { width: 940px; }
+
+  h1 { font-size: 23px; font-weight: 700; margin: 0 0 6px; }
+  .lead { font-size: 13.5px; color: #6b7280; margin: 0 0 24px; }
+
+  /* node */
+  .node {
+    display: grid; grid-template-columns: 50px 1fr 208px; align-items: center; gap: 16px;
+    border: 1px solid var(--line); border-left: 7px solid var(--accent);
+    background: var(--bg); border-radius: 12px; padding: 17px 18px;
+  }
+  .badge {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .badge svg { width: 25px; height: 25px; }
+  .nname { font-size: 16.5px; font-weight: 700; color: var(--accent); }
+  .nsub { font-size: 12.5px; color: #6b7280; margin-top: 6px; line-height: 1.55; }
+  .runbox { text-align: right; }
+  .runlabel { font-size: 11px; color: #98a2ae; font-weight: 700; letter-spacing: .06em; margin-bottom: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px 6px 11px; border-radius: 999px;
+    background: var(--chipbg); border: 1px solid var(--chipline);
+    color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap;
+    font-family: Consolas, monospace;
+  }
+  .chip.ja { font-family: inherit; }
+  .chip svg { width: 15px; height: 15px; flex: none; }
+
+  /* connector */
+  .conn { display: flex; align-items: center; gap: 9px; padding: 10px 0 10px 41px; }
+  .conn > svg { width: 17px; height: 17px; color: #9aa3ad; flex: none; }
+  .proto {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 6px;
+    background: #eef1f5; border: 1px solid #e0e5ec;
+    font-size: 12px; font-weight: 700; color: #4b5563;
+    font-family: Consolas, monospace;
+  }
+  .proto svg { width: 13px; height: 13px; }
+  .conn span { font-size: 12.5px; color: #6b7280; }
+
+  /* host boundary */
+  .host {
+    border: 2px dashed #c8d2de; border-radius: 14px;
+    background: #fbfcfe; padding: 16px 20px 20px; margin-top: 4px;
+  }
+  .hosthead {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: #64748b; margin-bottom: 12px;
+  }
+  .hosthead svg { width: 17px; height: 17px; }
+  .hosthead em { font-style: normal; font-weight: 400; color: #98a2ae; font-size: 12.5px; }
+
+  /* note */
+  .note {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-top: 22px; padding: 15px 18px;
+    background: #fffaf0; border: 1px solid #f0dfc0; border-radius: 10px;
+  }
+  .note > svg { width: 19px; height: 19px; color: #b45309; flex: none; margin-top: 1px; }
+  .note b { color: #b45309; font-size: 13.5px; }
+  .note p { margin: 5px 0 0; font-size: 13px; color: #374151; line-height: 1.6; }
+
+  .browser { --accent:#64748b; --bg:#f8fafc; --line:#dfe5ec; --chipbg:#eef2f7; --chipline:#dde3ea; }
+  .nginx   { --accent:#0891b2; --bg:#f3fbfd; --line:#c9e7f1; --chipbg:#e0f4fa; --chipline:#c2e5f0; }
+  .django  { --accent:#4f46e5; --bg:#f8f8ff; --line:#dbd7fa; --chipbg:#ecebfe; --chipline:#d6d2fb; }
+  .pg      { --accent:#0d9488; --bg:#f4fbfa; --line:#cfe9e5; --chipbg:#ddf2ef; --chipline:#bce4de; }
+  .vol     { --accent:#78716c; --bg:#faf9f8; --line:#e4e0db; --chipbg:#f1eeeb; --chipline:#e2ded8; }
+</style>
+
+<svg style="display:none">
+  <defs>
+    <g id="i-browser" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.4" y="3.6" width="19.2" height="16.8" rx="2.2"/>
+      <path d="M2.4 8.4h19.2"/>
+      <path d="M5.9 6h.02M9.2 6h.02M12.5 6h.02"/>
+    </g>
+    <g id="i-globe" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.2"/>
+      <ellipse cx="12" cy="12" rx="4" ry="9.2"/>
+      <path d="M3.2 9h17.6M3.2 15h17.6"/>
+    </g>
+    <g id="i-code" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8.6 17.6L3 12l5.6-5.6M15.4 6.4L21 12l-5.6 5.6"/>
+    </g>
+    <g id="i-db" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5.6" rx="7.8" ry="3"/>
+      <path d="M4.2 5.6v12.8c0 1.7 3.5 3 7.8 3s7.8-1.3 7.8-3V5.6"/>
+      <path d="M4.2 12c0 1.7 3.5 3 7.8 3s7.8-1.3 7.8-3"/>
+    </g>
+    <g id="i-disk" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.2 12h19.6"/>
+      <path d="M6.3 4.6h11.4a2 2 0 0 1 1.8 1.1l2.1 4.4a2 2 0 0 1 .2.9v6.4a2 2 0 0 1-2 2H4.2a2 2 0 0 1-2-2V11a2 2 0 0 1 .2-.9l2.1-4.4a2 2 0 0 1 1.8-1.1z"/>
+      <path d="M6.4 15.9h.02M10 15.9h.02"/>
+    </g>
+    <g id="i-server" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.8" y="3.2" width="18.4" height="7.2" rx="1.8"/>
+      <rect x="2.8" y="13.6" width="18.4" height="7.2" rx="1.8"/>
+      <path d="M6.4 6.8h.02M6.4 17.2h.02"/>
+      <path d="M10.5 6.8h6.6M10.5 17.2h6.6"/>
+    </g>
+    <g id="i-user" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="7.5" r="3.8"/>
+      <path d="M4.8 20.5v-1c0-3 3.2-5 7.2-5s7.2 2 7.2 5v1"/>
+    </g>
+    <g id="i-terminal" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.4" y="4.2" width="19.2" height="15.6" rx="2.2"/>
+      <path d="M6.8 9.4L10 12.4l-3.2 3M13 15.6h4.4"/>
+    </g>
+    <g id="i-lock" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4.6" y="10.4" width="14.8" height="10.6" rx="2.2"/>
+      <path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8"/>
+    </g>
+    <g id="i-arrow" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4v16M6.4 14.4L12 20l5.6-5.6"/>
+    </g>
+    <g id="i-info" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.2"/>
+      <path d="M12 11v5.4M12 7.6h.02"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="canvas">
+  <h1>全体構成 ─ コンテナごとの役割と実行ユーザー</h1>
+  <p class="lead">1つのDjangoアプリを、役割ごとに分けたコンテナで動かす。利用者ごとにコンテナを分ける必要はない</p>
+
+  <div class="node browser">
+    <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-browser"/></svg></div>
+    <div>
+      <div class="nname">利用者のブラウザ</div>
+      <div class="nsub">管理者・編集者・閲覧者は、すべて同じ入口からアクセスする</div>
+    </div>
+    <div class="runbox">
+      <div class="runlabel">アクセスする人</div>
+      <span class="chip ja"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg>アプリ利用者</span>
+    </div>
+  </div>
+
+  <div class="conn">
+    <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
+    <span class="proto"><svg viewBox="0 0 24 24"><use href="#i-lock"/></svg>HTTPS</span>
+    <span>インターネット経由で、公開しているポートへ届く</span>
+  </div>
+
+  <div class="host">
+    <div class="hosthead">
+      <svg viewBox="0 0 24 24"><use href="#i-server"/></svg>
+      ホストOS（Dockerを動かすサーバー）
+      <em>― この中はDockerネットワークでつながっている</em>
+    </div>
+
+    <div class="node nginx">
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-globe"/></svg></div>
+      <div>
+        <div class="nname">Nginxコンテナ（リバースプロキシ）</div>
+        <div class="nsub">外部からの通信を受け付け、HTTPSの処理を担当する</div>
+      </div>
+      <div class="runbox">
+        <div class="runlabel">実行ユーザー</div>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>nginx</span>
+      </div>
+    </div>
+
+    <div class="conn">
+      <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
+      <span class="proto">HTTP</span>
+      <span>アプリの処理をDjangoへ渡す</span>
+    </div>
+
+    <div class="node django">
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg></div>
+      <div>
+        <div class="nname">Djangoコンテナ（アプリケーション）</div>
+        <div class="nsub">アプリの処理を行う。一般利用者・管理者などの判定もここで行う</div>
+      </div>
+      <div class="runbox">
+        <div class="runlabel">実行ユーザー</div>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>appuser（非root）</span>
+      </div>
+    </div>
+
+    <div class="conn">
+      <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
+      <span class="proto">SQL</span>
+      <span>DB接続用のユーザー（appdb_user）でPostgreSQLへ接続する</span>
+    </div>
+
+    <div class="node pg">
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-db"/></svg></div>
+      <div>
+        <div class="nname">PostgreSQLコンテナ</div>
+        <div class="nsub">データを保存する。インターネットへ直接公開しない</div>
+      </div>
+      <div class="runbox">
+        <div class="runlabel">実行ユーザー</div>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>postgres</span>
+      </div>
+    </div>
+
+    <div class="conn">
+      <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg>
+      <span>コンテナを作り直してもデータが消えないよう、外へ書き出す</span>
+    </div>
+
+    <div class="node vol">
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-disk"/></svg></div>
+      <div>
+        <div class="nname">データ保存領域（ボリューム）</div>
+        <div class="nsub">実体はホストOS側にある。UID/GIDの不一致による権限エラーが起きやすい場所</div>
+      </div>
+      <div class="runbox">
+        <div class="runlabel">書き込む人</div>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>postgres</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <svg viewBox="0 0 24 24"><use href="#i-info"/></svg>
+    <div>
+      <b>外から入れる入口は1つだけにする</b>
+      <p>外部へ公開するのはNginxのポートだけで、DjangoとPostgreSQLはホストOSの内側に閉じておく。<br>
+         コンテナはそれぞれ別の実行ユーザーで動かし、1つ乗っ取られても影響範囲が広がらないようにする。</p>
+    </div>
+  </div>
+</div>

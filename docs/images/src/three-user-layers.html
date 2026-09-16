@@ -1,0 +1,266 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Dockerで登場する3種類のユーザー</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 36px 40px 40px;
+    background: #ffffff;
+    font-family: "Segoe UI", "Yu Gothic UI", "Noto Sans JP", Meiryo, sans-serif;
+    color: #1f2328;
+    -webkit-font-smoothing: antialiased;
+  }
+  .canvas { width: 1020px; }
+
+  h1 { font-size: 23px; font-weight: 700; margin: 0 0 6px; letter-spacing: .01em; }
+  .lead { font-size: 13.5px; color: #6b7280; margin: 0 0 22px; }
+
+  .colhead {
+    display: grid; grid-template-columns: 340px 310px 1fr; gap: 20px;
+    font-size: 11.5px; font-weight: 700; color: #98a2ae; letter-spacing: .1em;
+    padding: 0 18px 8px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;
+  }
+
+  .layer {
+    display: grid; grid-template-columns: 340px 310px 1fr; gap: 20px; align-items: center;
+    border: 1px solid var(--line); border-left: 7px solid var(--accent);
+    background: var(--bg); border-radius: 12px; padding: 20px 18px;
+  }
+
+  /* column 1 */
+  .idcol { display: flex; gap: 13px; align-items: flex-start; }
+  .num {
+    width: 19px; height: 19px; flex: none; border-radius: 50%;
+    background: #fff; color: var(--accent); border: 1.5px solid var(--accent);
+    font-size: 11.5px; font-weight: 700; line-height: 16px; text-align: center;
+    position: relative; top: -5px; margin-right: -12px; z-index: 2;
+  }
+  .badge {
+    width: 46px; height: 46px; flex: none; border-radius: 12px;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .badge svg { width: 26px; height: 26px; }
+  .lname { font-size: 17px; font-weight: 700; color: var(--accent); margin-bottom: 9px; }
+  .meta { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #6b7280; margin-top: 5px; }
+  .meta svg { width: 14px; height: 14px; flex: none; color: #9aa3ad; }
+
+  /* column 2 */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px 6px 10px; border-radius: 999px;
+    background: var(--chipbg); border: 1px solid var(--chipline);
+    color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap;
+  }
+  .chip svg { width: 15px; height: 15px; flex: none; }
+  .chip.mono { font-family: Consolas, monospace; font-size: 12.5px; }
+  .cap { font-size: 12px; color: #8b95a1; margin-top: 10px; }
+
+  /* column 3 */
+  .role { display: flex; align-items: flex-start; gap: 9px; }
+  .role > svg { width: 19px; height: 19px; flex: none; color: var(--accent); margin-top: 1px; }
+  .rtitle { font-size: 14.5px; color: #2c3138; font-weight: 600; }
+  .rsub { font-size: 12.5px; color: #6b7280; margin-top: 5px; line-height: 1.5; }
+
+  /* connector */
+  .conn { display: flex; align-items: center; gap: 10px; padding: 9px 0 9px 44px; }
+  .conn svg { width: 17px; height: 17px; color: #9aa3ad; flex: none; }
+  .conn span { font-size: 12.5px; color: #6b7280; }
+
+  /* note */
+  .note {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-top: 22px; padding: 15px 18px;
+    background: #fffaf0; border: 1px solid #f0dfc0; border-radius: 10px;
+  }
+  .note > svg { width: 19px; height: 19px; color: #b45309; flex: none; margin-top: 1px; }
+  .note b { color: #b45309; font-size: 13.5px; }
+  .note p { margin: 5px 0 0; font-size: 13px; color: #374151; line-height: 1.6; }
+
+  .l1 { --accent:#2563eb; --bg:#f7faff; --line:#d7e3f7; --chipbg:#e6effd; --chipline:#c8dbf8; }
+  .l2 { --accent:#0d9488; --bg:#f4fbfa; --line:#cfe9e5; --chipbg:#ddf2ef; --chipline:#bce4de; }
+  .l3 { --accent:#b45309; --bg:#fdf9f3; --line:#eddfc8; --chipbg:#f8ecd9; --chipline:#eed9b6; }
+</style>
+
+<svg style="display:none">
+  <defs>
+    <g id="i-users" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15.5 20.5v-1.6c0-2.2-1.8-4-4-4h-4c-2.2 0-4 1.8-4 4v1.6"/>
+      <circle cx="9.5" cy="7.5" r="3.6"/>
+      <path d="M20.5 20.5v-1.6c0-1.9-1.3-3.5-3-3.9"/>
+      <path d="M16 4.1a3.6 3.6 0 0 1 0 6.9"/>
+    </g>
+    <g id="i-shield" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2.6l8 3v6.2c0 4.8-3.4 8.4-8 9.6-4.6-1.2-8-4.8-8-9.6V5.6z"/>
+      <path d="M8.8 12l2.2 2.2 4.2-4.4"/>
+    </g>
+    <g id="i-pencil" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20h4L19 9a2.4 2.4 0 0 0 0-3.4l-.6-.6a2.4 2.4 0 0 0-3.4 0L4 16z"/>
+      <path d="M13.5 6.5l4 4"/>
+    </g>
+    <g id="i-eye" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1.8 12S5.4 5.6 12 5.6 22.2 12 22.2 12 18.6 18.4 12 18.4 1.8 12 1.8 12z"/>
+      <circle cx="12" cy="12" r="3.1"/>
+    </g>
+    <g id="i-box" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.6" y="5.4" width="18.8" height="13.2" rx="2.2"/>
+      <path d="M7.6 8v8M12 8v8M16.4 8v8"/>
+    </g>
+    <g id="i-terminal" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.4" y="4.2" width="19.2" height="15.6" rx="2.2"/>
+      <path d="M6.8 9.4L10 12.4l-3.2 3M13 15.6h4.4"/>
+    </g>
+    <g id="i-db" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5.6" rx="7.8" ry="3"/>
+      <path d="M4.2 5.6v12.8c0 1.7 3.5 3 7.8 3s7.8-1.3 7.8-3V5.6"/>
+      <path d="M4.2 12c0 1.7 3.5 3 7.8 3s7.8-1.3 7.8-3"/>
+    </g>
+    <g id="i-globe" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.2"/>
+      <ellipse cx="12" cy="12" rx="4" ry="9.2"/>
+      <path d="M3.2 9h17.6M3.2 15h17.6"/>
+    </g>
+    <g id="i-server" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.8" y="3.2" width="18.4" height="7.2" rx="1.8"/>
+      <rect x="2.8" y="13.6" width="18.4" height="7.2" rx="1.8"/>
+      <path d="M6.4 6.8h.02M6.4 17.2h.02"/>
+      <path d="M10.5 6.8h6.6M10.5 17.2h6.6"/>
+    </g>
+    <g id="i-file" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.4 2.8H6.6a2 2 0 0 0-2 2v14.4a2 2 0 0 0 2 2h10.8a2 2 0 0 0 2-2V8.6z"/>
+      <path d="M13.4 2.8v5.8h5.8"/>
+    </g>
+    <g id="i-code" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/>
+    </g>
+    <g id="i-monitor" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.4" y="3.6" width="19.2" height="13.2" rx="2.2"/>
+      <path d="M8.4 20.6h7.2M12 16.8v3.8"/>
+    </g>
+    <g id="i-cpu" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5.4" y="5.4" width="13.2" height="13.2" rx="2.2"/>
+      <rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1"/>
+      <path d="M9.4 2.6v2.8M14.6 2.6v2.8M9.4 18.6v2.8M14.6 18.6v2.8M2.6 9.4h2.8M2.6 14.6h2.8M18.6 9.4h2.8M18.6 14.6h2.8"/>
+    </g>
+    <g id="i-power" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.4v8.2"/>
+      <path d="M6.9 6.6a8.4 8.4 0 1 0 10.2 0"/>
+    </g>
+    <g id="i-key" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="7.6" cy="15.4" r="4.2"/>
+      <path d="M10.7 12.4L20 3.6M16.6 7l2.6 2.6M14.2 9.4l2.6 2.6"/>
+    </g>
+    <g id="i-upload" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 16.4V4.2M7.6 8.6L12 4.2l4.4 4.4"/>
+      <path d="M3.6 19.8h16.8"/>
+    </g>
+    <g id="i-arrow" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4v16M6.4 14.4L12 20l5.6-5.6"/>
+    </g>
+    <g id="i-info" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.2"/>
+      <path d="M12 11v5.4M12 7.6h.02"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="canvas">
+  <h1>Dockerで登場する「3種類のユーザー」</h1>
+  <p class="lead">同じ「ユーザー」でも、層が違えば目的も管理場所も別物</p>
+
+  <div class="colhead"><div>ユーザーの種類 / 管理場所</div><div>具体例</div><div>役割</div></div>
+
+  <div class="layer l1">
+    <div class="idcol">
+      <div class="num">1</div>
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-users"/></svg></div>
+      <div>
+        <div class="lname">アプリケーションユーザー</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg>Django（User / Group / Permission）</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-db"/></svg>データベースに保存される</div>
+      </div>
+    </div>
+    <div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-shield"/></svg>管理者</span>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-pencil"/></svg>編集者</span>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-eye"/></svg>閲覧者</span>
+      </div>
+      <div class="cap">ブラウザからログインする人</div>
+    </div>
+    <div class="role">
+      <svg viewBox="0 0 24 24"><use href="#i-monitor"/></svg>
+      <div>
+        <div class="rtitle">画面やAPIを利用する</div>
+        <div class="rsub">誰であるか・何をしてよいかは<br>Djangoが判定する</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn"><svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg><span>Djangoが許可した処理を、コンテナ内のプロセスが実行する</span></div>
+
+  <div class="layer l2">
+    <div class="idcol">
+      <div class="num">2</div>
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-box"/></svg></div>
+      <div>
+        <div class="lname">コンテナ内のLinuxユーザー</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-file"/></svg>Dockerfile（USER appuser）</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-box"/></svg>コンテナイメージに含まれる</div>
+      </div>
+    </div>
+    <div>
+      <div class="chips">
+        <span class="chip mono"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>appuser</span>
+        <span class="chip mono"><svg viewBox="0 0 24 24"><use href="#i-db"/></svg>postgres</span>
+        <span class="chip mono"><svg viewBox="0 0 24 24"><use href="#i-globe"/></svg>nginx</span>
+      </div>
+      <div class="cap">コンテナごとの実行ユーザー（非root）</div>
+    </div>
+    <div class="role">
+      <svg viewBox="0 0 24 24"><use href="#i-cpu"/></svg>
+      <div>
+        <div class="rtitle">コンテナ内でプロセスを実行する</div>
+        <div class="rsub">コンテナ内のファイルへの<br>読み書き権限を持つ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn"><svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg><span>コンテナは、ホストOS上のDockerによって動かされる</span></div>
+
+  <div class="layer l3">
+    <div class="idcol">
+      <div class="num">3</div>
+      <div class="badge"><svg viewBox="0 0 24 24"><use href="#i-server"/></svg></div>
+      <div>
+        <div class="lname">ホストOSのユーザー</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-server"/></svg>サーバーのLinux（SSH・dockerグループ）</div>
+        <div class="meta"><svg viewBox="0 0 24 24"><use href="#i-terminal"/></svg>CI/CDの実行ユーザーも含む</div>
+      </div>
+    </div>
+    <div>
+      <div class="chips">
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-key"/></svg>サーバー管理者</span>
+        <span class="chip"><svg viewBox="0 0 24 24"><use href="#i-upload"/></svg>デプロイ担当者</span>
+      </div>
+      <div class="cap">権限を与える相手は最小限にする</div>
+    </div>
+    <div class="role">
+      <svg viewBox="0 0 24 24"><use href="#i-power"/></svg>
+      <div>
+        <div class="rtitle">Dockerを起動・停止・更新する</div>
+        <div class="rsub">実質的にroot相当の<br>強い権限になる</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <svg viewBox="0 0 24 24"><use href="#i-info"/></svg>
+    <div>
+      <b>3層は独立している</b>
+      <p>Djangoの管理者ユーザーを作っても、その人がサーバーへSSH接続できるようになるわけではない。<br>
+         反対に、SSH接続できる人が、自動的にDjangoの管理画面を利用できるわけでもない。</p>
+    </div>
+  </div>
+</div>
