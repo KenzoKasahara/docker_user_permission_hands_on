@@ -2,7 +2,7 @@
 
 ## この章の目的
 
-Dockerfileでコンテナ内に一般ユーザーを作り、アプリをrootではなく`appuser`で動かせるようにします。あわせて、非root化がなぜ必要なのかと、非root化にまつわる誤解を整理します。
+Dockerfileでコンテナ内に一般ユーザーを作り、アプリをrootではなく `appuser` で動かせるようにします。後半では、非root化がなぜ必要なのかと、よくある誤解を整理します。
 
 ## 現在地
 
@@ -12,9 +12,9 @@ Dockerfileでコンテナ内に一般ユーザーを作り、アプリをrootで
 
 ## 完了条件
 
-- [ ] `docker compose ps`で`web`と`db`が起動している
-- [ ] `docker compose exec web id`で`uid=10001(appuser)`と表示される
-- [ ] `http://localhost:8000/`で、Linuxユーザー`appuser`とDBユーザー`appdb_user`が返る
+- [ ] `docker compose ps` で `web` と `db` が起動している
+- [ ] `docker compose exec web id` で `uid=10001(appuser)` と表示される
+- [ ] `http://localhost:8000/` で、Linuxユーザー `appuser` とDBユーザー `appdb_user` が返る
 
 ---
 
@@ -38,7 +38,7 @@ Dockerfileでコンテナ内に一般ユーザーを作り、アプリをrootで
     └─ config/          … Djangoプロジェクト（settings, urls, views, wsgi）
 ```
 
-サンプルアプリは`/`にアクセスすると、Djangoを動かしているLinuxユーザーと、PostgreSQLへ接続しているDBユーザーをJSONで返します。3層のうち「コンテナ内のLinuxユーザー」と、[03](03_data_and_permission_design.md#2-dbユーザーも別の権限である)で扱うDBユーザーを、1回のリクエストで確認するためです。
+サンプルアプリは `/` にアクセスすると、Djangoを動かしているLinuxユーザーと、PostgreSQLへ接続しているDBユーザーをJSONで返します。3層のうち「コンテナ内のLinuxユーザー」と、[03](03_data_and_permission_design.md#2-dbユーザーも別の権限である)で扱うDBユーザーを、1回のリクエストで確認するためです。
 
 | 項目 | 検証したバージョン |
 | --- | --- |
@@ -54,7 +54,7 @@ Dockerfileでコンテナ内に一般ユーザーを作り、アプリをrootで
 
 #### 実行
 
-[`source/Dockerfile`](../source/Dockerfile)は次の内容です。ビルドはStep 3の`docker compose up --build`でまとめて行うため、ここでは中身を確認するだけで構いません。
+[`source/Dockerfile`](../source/Dockerfile)は次の内容です。ビルドはStep 3の `docker compose up --build` でまとめて行うため、ここでは中身を確認するだけで構いません。
 
 ```dockerfile
 FROM python:3.14-slim
@@ -89,11 +89,11 @@ CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
 USER appuser
 ```
 
-これにより、Djangoはrootではなく`appuser`として動きます。`USER`より前の`pip install`や`chown`はrootで実行されるため、インストールと所有者変更を先に済ませてから実行ユーザーを切り替えます。
+これにより、Djangoはrootではなく `appuser` として動きます。`USER` より前の `pip install` や `chown` はrootで実行されるため、インストールと所有者変更を先に済ませてから実行ユーザーを切り替えます。
 
 #### ユーザー作成コマンドの読み方
 
-`USER appuser`で切り替えるには、その前にユーザーが存在している必要があります。それを作るのが次の部分です。
+`USER appuser` で切り替えるには、その前にユーザーが存在している必要があります。それを作るのが次の部分です。
 
 ```dockerfile
 RUN groupadd --gid 10001 appgroup \
@@ -106,8 +106,8 @@ RUN groupadd --gid 10001 appgroup \
 
 見た目は複数行ですが、1つのシェルコマンドです。
 
-- 行末の`\`は「次の行に続く」という意味で、改行を打ち消します
-- `&&`は「左のコマンドが成功したら右を実行する」という意味です。グループ作成に失敗したらユーザー作成へ進まず、ビルドがそこで止まります
+- 行末の `\` は「次の行に続く」という意味で、改行を打ち消します
+- `&&` は「左のコマンドが成功したら右を実行する」という意味です。グループ作成に失敗したらユーザー作成へ進まず、ビルドがそこで止まります
 
 実際に実行されるのは、次の2つのコマンドです。
 
@@ -118,20 +118,20 @@ useradd --uid 10001 --gid appgroup --create-home --shell /usr/sbin/nologin appus
 
 | 部分 | 意味 | この指定にする理由 |
 | --- | --- | --- |
-| `groupadd --gid 10001 appgroup` | GID 10001の`appgroup`グループを作る | 次の`useradd`で所属先に指定するため、先に作る |
-| `useradd ... appuser` | `appuser`ユーザーを作る | 最後の引数がユーザー名 |
-| `--uid 10001` | UIDを10001に固定する | 番号を自動採番に任せると、ベースイメージによって変わりうる。固定しておけば、ホスト側やVolumeで`chown 10001:10001`のように数値で所有者を合わせられる（[03](03_data_and_permission_design.md)で使う）。1000はホストの一般ユーザーと重なりやすいため、離れた値にしている |
-| `--gid appgroup` | 所属する主グループを`appgroup`にする | 上で作ったGID 10001のグループに揃える |
-| `--create-home` | `/home/appuser`を作る | Debian系の`useradd`は既定でホームディレクトリを作らない。ライブラリによってはキャッシュや設定を`$HOME`へ書くため、存在しないとエラーになることがある |
+| `groupadd --gid 10001 appgroup` | GID 10001の `appgroup` グループを作る | 次の `useradd` で所属先に指定するため、先に作る |
+| `useradd ... appuser` | `appuser` ユーザーを作る | 最後の引数がユーザー名 |
+| `--uid 10001` | UIDを10001に固定する | 番号を自動採番に任せると、ベースイメージによって変わりうる。固定しておけば、ホスト側やVolumeで `chown 10001:10001` のように数値で所有者を合わせられる（[03](03_data_and_permission_design.md)で使う）。1000はホストの一般ユーザーと重なりやすいため、離れた値にしている |
+| `--gid appgroup` | 所属する主グループを `appgroup` にする | 上で作ったGID 10001のグループに揃える |
+| `--create-home` | `/home/appuser` を作る | Debian系の `useradd` は既定でホームディレクトリを作らない。ライブラリによってはキャッシュや設定を `$HOME` へ書くため、存在しないとエラーになることがある |
 | `--shell /usr/sbin/nologin` | ログインシェルを「ログイン不可」にする | 対話的なログインに使わないユーザーであることを明示する |
 
-`--shell /usr/sbin/nologin`は、`docker compose exec web bash`まで禁止するものではありません。`exec`はログインシェルを経由せず、指定したコマンドを直接起動するためです。あくまで「ログイン用のユーザーではない」という表明であり、侵入対策の本体は`USER`による非root化のほうです。
+`--shell /usr/sbin/nologin` は、`docker compose exec web bash` まで禁止するものではありません。`exec` はログインシェルを経由せず、指定したコマンドを直接起動するためです。あくまで「ログイン用のユーザーではない」という表明であり、侵入対策の本体は `USER` による非root化のほうです。
 
 ### Step 2: 接続情報を `.env` に用意する
 
 #### やること
 
-DBのパスワードとDjangoの`SECRET_KEY`を、リポジトリのルートの`.env`へ書きます。
+DBのパスワードとDjangoの `SECRET_KEY` を、リポジトリのルートの `.env` へ書きます。
 
 #### 実行
 
@@ -139,7 +139,7 @@ DBのパスワードとDjangoの`SECRET_KEY`を、リポジトリのルートの
 cp .env.sample .env
 ```
 
-コピーした`.env`を開き、`<...>`の部分を自分で決めた値に置き換えます。
+コピーした `.env` を開き、`<...>` の部分を自分で決めた値に置き換えます。
 
 ```dotenv
 DB_PASSWORD=<任意の強いパスワード>
@@ -148,30 +148,30 @@ DJANGO_SECRET_KEY=<ランダムな長い文字列>
 WEB_PORT=8000
 ```
 
-`DJANGO_SECRET_KEY`には、たとえば`python -c "import secrets; print(secrets.token_urlsafe(50))"`の出力を使います。
+`DJANGO_SECRET_KEY` には、たとえば `python -c "import secrets; print(secrets.token_urlsafe(50))"` の出力を使います。
 
 #### 期待結果
 
-次のコマンドが何も表示せずに終われば、`.env`を読み込めています。
+次のコマンドが何も表示せずに終われば、`.env` を読み込めています。
 
 ```bash
 docker compose config --quiet
 ```
 
-`.env`がない、または値が空の場合は、`required variable DB_PASSWORD is missing a value: .envにDB_PASSWORDを設定してください`のようなエラーで止まります。
+`.env` がない、または値が空の場合は、`required variable DB_PASSWORD is missing a value: .envにDB_PASSWORDを設定してください` のようなエラーで止まります。
 
 #### なぜ行うのか
 
-Compose定義は`${DB_PASSWORD}`と`${DJANGO_SECRET_KEY}`を参照します。PostgreSQL公式イメージは`POSTGRES_PASSWORD`について「空または未定義であってはならない」と明記しており、値がないとdbコンテナは初期化に失敗します。そこで`${DB_PASSWORD:?...}`と書き、値がなければ起動前にエラーで止めています。
+Compose定義は `${DB_PASSWORD}` と `${DJANGO_SECRET_KEY}` を参照します。PostgreSQL公式イメージは `POSTGRES_PASSWORD` について「空または未定義であってはならない」と明記しており、値がないとdbコンテナは初期化に失敗します。そこで `${DB_PASSWORD:?...}` と書き、値がなければ起動前にエラーで止めています。
 
-`.env`の置き場所は、`docker-compose.yml`と同じリポジトリのルートです。Composeが変数の置換に使う`.env`はプロジェクトディレクトリのものだけで、`source/.env`に置いても読まれません。
+`.env` の置き場所は、`docker-compose.yml` と同じリポジトリのルートです。Composeが変数の置換に使う `.env` はプロジェクトディレクトリのものだけで、`source/.env` に置いても読まれません。
 
 秘密情報をリポジトリとイメージの両方から外すため、次の2つを設定済みです。
 
 | ファイル | 設定 | 防いでいること |
 | --- | --- | --- |
 | [`.gitignore`](../.gitignore) | `.env` | パスワードをGitへコミットする |
-| [`source/.dockerignore`](../source/.dockerignore) | `.env` | Dockerfileの`COPY . /app/`で、`.env`がイメージへ焼き込まれる |
+| [`source/.dockerignore`](../source/.dockerignore) | `.env` | Dockerfileの `COPY . /app/` で、`.env` がイメージへ焼き込まれる |
 
 ### Step 3: Docker Composeで起動する
 
@@ -230,7 +230,7 @@ docker compose ps
 
 #### 期待結果
 
-`docker compose ps`で、`db`が`(healthy)`、`web`が`Up`になっていれば成功です（検証時の出力。検証環境では8000番が使用中だったため`WEB_PORT=8001`で起動しており、既定の設定なら`PORTS`は`0.0.0.0:8000->8000/tcp`になります。`CREATED`や`STATUS`の時間は環境により異なります）。
+`docker compose ps` で、`db` が `(healthy)`、`web` が `Up` になっていれば成功です（検証時の出力。検証環境では8000番が使用中だったため `WEB_PORT=8001` で起動しており、既定の設定なら `PORTS` は `0.0.0.0:8000->8000/tcp` になります。`CREATED` や `STATUS` の時間は環境により異なります）。
 
 ```text
 NAME                                    IMAGE                                 COMMAND                   SERVICE   CREATED          STATUS                    PORTS
@@ -238,9 +238,9 @@ docker_user_permission_hands_on-db-1    postgres:17                           "d
 docker_user_permission_hands_on-web-1   docker_user_permission_hands_on-web   "gunicorn config.wsg…"   web       1 second ago     Up Less than a second     0.0.0.0:8001->8000/tcp, [::]:8001->8000/tcp
 ```
 
-`db`の`PORTS`は`5432/tcp`だけで、`0.0.0.0:`が付いていません。コンテナ間では接続できますが、ホストや外部へは公開されていない状態です。
+`db` の `PORTS` は `5432/tcp` だけで、`0.0.0.0:` が付いていません。コンテナ間では接続できますが、ホストや外部へは公開されていない状態です。
 
-内部では、次の順序で処理されます。
+`docker compose up -d --build` を実行すると、Docker Composeは次の順序でイメージとコンテナを用意します。
 
 ```text
 1. source/Dockerfile からDjangoイメージを作成
@@ -258,21 +258,21 @@ Djangoは起動時にはDBへ接続せず、DBを使う処理が初めて呼ば�
 
 | エラー | 原因 | 対処 |
 | --- | --- | --- |
-| `Bind for 0.0.0.0:8000 failed: port is already allocated` | ホストの8000番を別のプロセスやコンテナが使っている | `.env`の`WEB_PORT`を`8001`などに変え、`docker compose up -d`を再実行する。以降の手順のURLもそのポートに読み替える |
-| `required variable DB_PASSWORD is missing a value` | ルートに`.env`がない、または値が空 | Step 2をやり直す |
-| dbが`unhealthy`のまま、ログに`password authentication failed` | 以前に別のパスワードでVolumeを初期化している。`POSTGRES_PASSWORD`はVolumeが空のときだけ使われる | 検証用のデータなら`docker compose down -v`でVolumeごと削除して再起動する |
+| `Bind for 0.0.0.0:8000 failed: port is already allocated` | ホストの8000番を別のプロセスやコンテナが使っている | `.env` の `WEB_PORT` を `8001` などに変え、`docker compose up -d` を再実行する。以降の手順のURLもそのポートに読み替える |
+| `required variable DB_PASSWORD is missing a value` | ルートに `.env` がない、または値が空 | Step 2をやり直す |
+| dbが `unhealthy` のまま、ログに `password authentication failed` | 以前に別のパスワードでVolumeを初期化している。`POSTGRES_PASSWORD` はVolumeが空のときだけ使われる | 検証用のデータなら `docker compose down -v` でVolumeごと削除して再起動する |
 
 </details>
 
 #### なぜ行うのか
 
-この例は[01の全体構成図](01_overview_and_roles.md#3-全体構成)からNginxを省いた最小構成です。非root化の確認に集中するためで、本番では図のとおりNginxを前段へ置き、Djangoのポートは外部へ公開しません。
+この例は[01の全体構成図](01_overview_and_roles.md#2-全体構成)からNginxを省いた最小構成です。非root化の確認に集中するためで、本番では図のとおりNginxを前段へ置き、Djangoのポートは外部へ公開しません。
 
 ### Step 4: 実行ユーザーを確認する
 
 #### やること
 
-Djangoが実際に`appuser`で動いているかを確認します。
+Djangoが実際に `appuser` で動いているかを確認します。
 
 #### 実行
 
@@ -282,13 +282,13 @@ docker compose exec web id
 
 #### 期待結果
 
-次のように表示されれば、`appuser`で動いています。
+次のように表示されれば、`appuser` で動いています。
 
 ```text
 uid=10001(appuser) gid=10001(appgroup) groups=10001(appgroup)
 ```
 
-`exec`で起動したコマンドも、Dockerfileの`USER`で指定したユーザーで動きます。
+`exec` で起動したコマンドも、Dockerfileの `USER` で指定したユーザーで動きます。
 
 プロセスも確認できます。
 
@@ -296,7 +296,7 @@ uid=10001(appuser) gid=10001(appgroup) groups=10001(appgroup)
 docker compose top web
 ```
 
-`UID`列が`10001`であれば、gunicornのmasterプロセス・workerプロセスともに`appuser`で動いています（検証時の出力。`PID`や時刻は環境により異なります）。
+`UID` 列が `10001` であれば、gunicornのmasterプロセス・workerプロセスともに `appuser` で動いています（検証時の出力。`PID` や時刻は環境により異なります）。
 
 ```text
 SERVICE  #   UID    PID    PPID   C   STIME  TTY  TIME      CMD
@@ -314,7 +314,7 @@ docker compose exec web touch /etc/test
 touch: cannot touch '/etc/test': Permission denied
 ```
 
-WindowsのGit Bashでは、`/etc/test`のような`/`で始まる引数がWindowsのパス（例: `C:/Program Files/Git/etc/test`）へ自動変換され、`No such file or directory`になります。先頭に`MSYS_NO_PATHCONV=1`を付けて変換を止めてください。PowerShellやコマンドプロンプトでは、この変換は起きません。
+WindowsのGit Bashでは、`/etc/test` のような `/` で始まる引数がWindowsのパス（例: `C:/Program Files/Git/etc/test`）へ自動変換され、`No such file or directory` になります。先頭に `MSYS_NO_PATHCONV=1` を付けて変換を止めてください。PowerShellやコマンドプロンプトでは、この変換は起きません。
 
 ```bash
 MSYS_NO_PATHCONV=1 docker compose exec web touch /etc/test
@@ -324,7 +324,7 @@ MSYS_NO_PATHCONV=1 docker compose exec web touch /etc/test
 
 #### やること
 
-ブラウザまたは`curl`でアプリへアクセスし、LinuxユーザーとDBユーザーを確認します。あわせて、マイグレーションでDBへ書き込めることを確認します。
+ブラウザまたは `curl` でアプリへアクセスし、LinuxユーザーとDBユーザーを確認します。あわせて、マイグレーションでDBへ書き込めることを確認します。
 
 #### 実行
 
@@ -333,17 +333,17 @@ curl http://localhost:8000/
 docker compose exec web python manage.py migrate
 ```
 
-Windows PowerShell 5.1では`curl`が`Invoke-WebRequest`の別名になっているため、`curl.exe`と入力するか、ブラウザで開きます。
+Windows PowerShell 5.1では `curl` が `Invoke-WebRequest` の別名になっているため、`curl.exe` と入力するか、ブラウザで開きます。
 
 #### 期待結果
 
-`curl`の結果は次のとおりです。
+`curl` の結果は次のとおりです。
 
 ```json
 {"linux_user": "appuser", "uid": 10001, "gid": 10001, "db_user": "appdb_user"}
 ```
 
-`migrate`は、最後に次のような行を表示して終わります。
+`migrate` は、最後に次のような行を表示して終わります。
 
 ```text
   Applying auth.0011_update_proxy_permissions... OK
@@ -352,7 +352,7 @@ Windows PowerShell 5.1では`curl`が`Invoke-WebRequest`の別名になってい
 
 #### なぜ行うのか
 
-`linux_user`と`db_user`が別の値になっていることが、この確認の要点です。Djangoのプロセスは`appuser`というLinuxユーザーで動き、PostgreSQLへは`appdb_user`というDBユーザーで接続しています。同じDjangoでも、ファイルやプロセスの権限とDB内の権限は別々に判定されます（[03](03_data_and_permission_design.md#2-dbユーザーも別の権限である)）。
+`linux_user` と `db_user` が別の値になっていることが、この確認の要点です。Djangoのプロセスは `appuser` というLinuxユーザーで動き、PostgreSQLへは `appdb_user` というDBユーザーで接続しています。同じDjangoでも、ファイルやプロセスの権限とDB内の権限は別々に判定されます（[03](03_data_and_permission_design.md#2-dbユーザーも別の権限である)）。
 
 ### Step 6: 後片付け
 
@@ -368,7 +368,7 @@ docker compose down -v
 
 #### 期待結果
 
-`web`・`db`のコンテナ、ネットワーク、`postgres_data` Volumeが`Removed`と表示されます。データを残して止めるだけなら、`-v`を付けずに`docker compose down`を実行します。
+`web` ・ `db` のコンテナ、ネットワーク、`postgres_data` Volumeが `Removed` と表示されます。データを残して止めるだけなら、`-v` を付けずに `docker compose down` を実行します。
 
 ---
 
@@ -376,7 +376,7 @@ docker compose down -v
 
 rootは、Linux上でほぼすべての操作を行える強いユーザーです。
 
-もしDjangoや依存ライブラリの脆弱性を悪用され、コンテナ内で任意のコマンドを実行された場合、rootで動いているほど被害が大きくなりやすくなります。
+Djangoや依存ライブラリの脆弱性を悪用され、コンテナ内で任意のコマンドを実行されたとします。このときプロセスがrootで動いていると、攻撃者もrootとして操作できるため、被害が大きくなります。
 
 ```text
 脆弱性が悪用される
@@ -393,43 +393,32 @@ appuserなら許可された範囲に限定
 
 ## 3. よくある誤解
 
-### 誤解1: 利用者ごとにコンテナを作る
+### 誤解1「利用者ごとにコンテナを作る」
 
 通常の業務アプリでは不要です。1つのDjangoアプリに複数のアプリケーションユーザーを登録し、Django側で権限を分けます。
 
 利用者ごとに環境やデータを完全分離するSaaS設計では別の検討が必要ですが、最初からそこまで考える必要はありません。
 
-### 誤解2: Dockerの`USER`でアプリ側の管理者・一般利用者を分ける
+### 誤解2「Dockerの `USER` でアプリ側の管理者・一般利用者を分ける」
 
-Dockerfileの`USER`は、コンテナ内でプロセスを動かすLinuxユーザーです。画面を利用する管理者・一般利用者は、Django側で分けます。
+Dockerfileの `USER` は、コンテナ内でプロセスを動かすLinuxユーザーです。画面を利用する管理者・一般利用者は、Django側で分けます。
 
-### 誤解3: 非rootにすれば安全である
+### 誤解3「非rootにすれば安全である」
 
-非root化は重要ですが、それだけでは不十分です。次の対策も必要です。
+非root化は重要ですが、それだけでは不十分です。コンテナの設定としては、少なくとも次の対策を組み合わせます。
 
-- イメージや依存パッケージの脆弱性スキャン
 - パスワードや秘密情報をイメージへ埋め込まない
-- 不要なポートを公開しない
-- DBをインターネットへ直接公開しない
-- HTTPSを使用する
-- 認証・認可をサーバー側で検証する
+- DBを含め、不要なポートを公開しない
 - コンテナへ不要なLinux Capabilityを与えない
 - 可能ならファイルシステムを読み取り専用にする
 
-### 誤解4: コンテナのrootはホストのrootと別物である
+コンテナの外側でも、イメージや依存パッケージの脆弱性スキャン、HTTPS、サーバー側での認証・認可の検証が欠かせません。
+
+### 誤解4「コンテナのrootはホストのrootと別物である」
 
 既定のDocker Engineでは、ユーザー名前空間の再マッピング（`userns-remap`）は有効になっていません。そのため、コンテナ内のrootはホストのUID 0と同一のユーザーです。実際に操作を制限しているのは、Capabilityの削減・seccomp・AppArmorといった仕組みであり、ユーザーIDの分離ではありません。
 
-ユーザーIDまで分離するには、`userns-remap`を明示的に有効にするか、Rootlessモードを使います。いずれにしても「コンテナだからrootでも問題ない」とは考えません。
-
----
-
-## まとめ
-
-- Dockerfileの`USER`はコンテナ内の実行ユーザーを決める
-- アプリをrootで動かすと、侵害されたときの被害範囲が広がる
-- 非root化は基本対策であり、認証・認可や脆弱性対策も併用する
-- 既定構成では、コンテナのrootはホストのUID 0と同じユーザーである
+ユーザーIDまで分離するには、`userns-remap` を明示的に有効にするか、Rootlessモードを使います。いずれにしても「コンテナだからrootでも問題ない」とは考えません。
 
 ---
 

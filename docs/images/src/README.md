@@ -6,7 +6,7 @@
 ## 前提
 
 - ヘッドレス描画できるChrome / Chromium
-  コマンド名は環境によって異なります（`google-chrome`、`chromium`、Windowsでは`chrome.exe`のフルパスなど）。以下では`chrome`として記載します。
+  コマンド名は環境によって異なります（`google-chrome`、`chromium`、Windowsでは `chrome.exe` のフルパスなど）。以下では `chrome` として記載します。
 - Python と Pillow（`pip install pillow`）
 
 ## 再生成の手順
@@ -41,7 +41,7 @@ PY
 rm raw.png
 ```
 
-出力先は`NAME`から決まるため、図を取り違えて上書きすることはありません。
+出力先は `NAME` から決まるため、図を取り違えて上書きすることはありません。
 
 ## ファイル一覧
 

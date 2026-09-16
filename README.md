@@ -1,6 +1,6 @@
 # docker_user_permission_handson
 
-DockerでWebアプリを動かすときに登場する「ユーザー」と「権限」を、3つの層に分けて整理した入門ガイドです。Django + PostgreSQL + Nginx の構成を例にしています。
+DockerでWebアプリを動かすときに登場する「ユーザー」と「権限」を、3つの層に分けて整理した入門ガイドです。本編ではDjango + PostgreSQLの最小構成を実際に動かして確認します。本番を想定してNginxを前段に置いた構成は、図と解説で紹介しています（サンプルアプリには含まれません）。
 
 ## ドキュメント
 
@@ -22,11 +22,10 @@ docker compose down -v
 
 ## 扱う内容
 
-- アプリ利用者・コンテナ内のLinuxユーザー・ホストOSのユーザーという3層の切り分け
-- Dockerfileの`USER`によるコンテナの非root化
-- Bind MountでのUID/GID不一致と`Permission denied`の切り分け
+- Dockerfileの `USER` によるコンテナの非root化
+- Bind MountでのUID/GID不一致と `Permission denied` の切り分け
 - PostgreSQLの接続ユーザーをアプリと分けて設計する考え方
-- `docker`グループとデプロイ権限の扱い
+- `docker` グループとデプロイ権限の扱い
 
 ## License
 
