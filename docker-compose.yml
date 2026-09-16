@@ -18,7 +18,7 @@ services:
         # DBが接続を受け付けるまでwebの起動を待つ
         condition: service_healthy
     volumes:
-      - ./tmp:/app/uploads
+      - ./uploads:/app/uploads
 
   db:
     image: postgres:17
